@@ -1,73 +1,121 @@
-'use strict'
+'use strict';
 
-const express = require('express')
-const bodyParser = require('body-parser')
-const request = require('request')
+// Getting started with Facebook Messaging Platform
+// https://developers.facebook.com/docs/messenger-platform/quickstart
 
-const app = express()
+const express = require('express');
+const request = require('superagent');
+const bodyParser = require('body-parser');
 
-app.set('port',(process.env.PORT || 5000))
+let pageToken = process.env.APP_PAGE_TOKEN;
+const verifyToken = process.env.APP_VERIFY_TOKEN;
 
-//Allows us to process the data
-app.use(bodyParser.urlencoded({extended: false}))
-app.use(bodyParser.json())
+const app = express();
+app.use(bodyParser.json());
 
-//ROUTES
-
-app.get('/', function(req, res){
-	 if (req.query['hub.verify_token'] === "muthiah566") {
+app.get('/webhook', (req, res) => {
+    if (req.query['hub.verify_token'] === verifyToken) {
         return res.send(req.query['hub.challenge']);
     }
     res.send('Error, wrong validation token');
-})
+});
+app.post('/webhook', (req, res) => {
+    const messagingEvents = req.body.entry[0].messaging;
 
+    messagingEvents.forEach((event) => {
+        const sender = event.sender.id;
 
-//Facebook
+        if (event.postback) {
+            const text = JSON.stringify(event.postback).substring(0, 200);
+            sendTextMessage(sender, 'Postback received: ' + text);
+        } else if (event.message && event.message.text) {
+            const text = event.message.text.trim().substring(0, 200);
 
-app.get('/webhook/', function(req, res){
-	if(req.query['hub.verify_token'] === 'muthiah566'){
-		res.send(req.query['hub.challenge'])
-	}
-	res.send("Wrong token")
-})
+            if (text.toLowerCase() === 'generic') {
+                sendGenericMessage(sender);
+            } else {
+                sendTextMessage(sender, 'Text received, echo: ' + text);
+            }
+        }
+    });
 
-let token = "EAAGmHxMOKisBAJIFyuxZBbDAsWVRO8ZCyC5YzDFZAZCqucgztJrrKMwhIYZBpdZCWGFkmFeOPn6S19mZAouJ76StA6BUkZCA23JexrouC3WEQXYYY2K6ObyCOd5AvcyXUYz9Ag0jW3lZBVmZA3QkZAB4xmcgWUymDsoJJLtTbe2DmutmQZDZD"
+    res.sendStatus(200);
+});
 
-app.post('/webhook',function(req,res){
-	let messaging_events = req.body.entry[0].messaging
-	for(let i=0;i < messaging_events.length;i++){
-		let event=messaging_events[i]
-		let sender = event.sender.id
-		if(event.message && event.message.text){
-			let text = event.message.text
-			sendText(sender, "Text echo: " + text.substring(0,100))
+function sendMessage (sender, message) {
+    request
+        .post('https://graph.facebook.com/v2.6/me/messages')
+        .query({access_token: pageToken})
+        .send({
+            recipient: {
+                id: sender
+            },
+            message: message
+        })
+        .end((err, res) => {
+            if (err) {
+                console.log('Error sending message: ', err);
+            } else if (res.body.error) {
+                console.log('Error: ', res.body.error);
+            }
+        });
+}
 
-		}
-	}
-	res.sendStatus(200)
-})
+function sendTextMessage (sender, text) {
+    sendMessage(sender, {
+        text: text
+    });
+}
 
-function sendText(sender, text) {
-	let messageData = {text: text}
+function sendGenericMessage (sender) {
+    sendMessage(sender, {
+        attachment: {
+            type: 'template',
+            payload: {
+                template_type: 'generic',
+                elements: [{
+                    title: 'First card',
+                    subtitle: 'Element #1 of an hscroll',
+                    image_url: 'http://messengerdemo.parseapp.com/img/rift.png',
+                    buttons: [{
+                        type: 'web_url',
+                        url: 'https://www.messenger.com/',
+                        title: 'Web url'
+                    }, {
+                        type: 'postback',
+                        title: 'Postback',
+                        payload: 'Payload for first element in a generic bubble'
+                    }]
+                }, {
+                    title: 'Second card',
+                    subtitle: 'Element #2 of an hscroll',
+                    image_url: 'http://messengerdemo.parseapp.com/img/gearvr.png',
+                    buttons: [{
+                        type: 'postback',
+                        title: 'Postback',
+                        payload: 'Payload for second element in a generic bubble'
+                    }]
+                }]
+            }
+        }
+    });
+}
 
-request({
-	url: "https://graph.facebook.com/v2.6/me/messages",
-	qs : {access_token : token},
-	method : "POST",
-	json: {
-		recipient: {id, sender},
-		message: messageData
-	}
-}, function(error, response, body){
-	if(error){
-		console.log("sending error")
-	}
-	else if(response.body.error){
-		console.log("response body error")
-	}
-})}
+// update and check page token for an existing app
+// it's necessary because https://zeit.co/now generates new urls on every deploy
+// but there's no way to update webhook url on facebook messenger platform
+app.post('/token', (req, res) => {
+    if (req.body.verifyToken === verifyToken) {
+        pageToken = req.body.token;
+        return res.sendStatus(200);
+    }
+    res.sendStatus(403);
+});
+app.get('/token', (req, res) => {
+    if (req.body.verifyToken === verifyToken) {
+        return res.send({token: pageToken});
+    }
+    res.sendStatus(403);
+});
 
-
-app.listen(app.get('port'),function(){
-	console.log("running: port")
-})
+app.listen(3000);
