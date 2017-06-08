@@ -31,7 +31,7 @@ app.get('/webhook/', function(req, res){
 	res.send("Wrong token")
 })
 
-token = "EAAGmHxMOKisBAJIFyuxZBbDAsWVRO8ZCyC5YzDFZAZCqucgztJrrKMwhIYZBpdZCWGFkmFeOPn6S19mZAouJ76StA6BUkZCA23JexrouC3WEQXYYY2K6ObyCOd5AvcyXUYz9Ag0jW3lZBVmZA3QkZAB4xmcgWUymDsoJJLtTbe2DmutmQZDZD"
+let token = "EAAGmHxMOKisBAJIFyuxZBbDAsWVRO8ZCyC5YzDFZAZCqucgztJrrKMwhIYZBpdZCWGFkmFeOPn6S19mZAouJ76StA6BUkZCA23JexrouC3WEQXYYY2K6ObyCOd5AvcyXUYz9Ag0jW3lZBVmZA3QkZAB4xmcgWUymDsoJJLtTbe2DmutmQZDZD"
 
 app.post('/webhook',function(req,res){
 	let messaging_events = req.body.entry[0].messaging_events
