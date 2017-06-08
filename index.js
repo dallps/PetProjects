@@ -7,8 +7,8 @@ const express = require('express');
 const request = require('superagent');
 const bodyParser = require('body-parser');
 
-let pageToken = "EAAGmHxMOKisBAJIFyuxZBbDAsWVRO8ZCyC5YzDFZAZCqucgztJrrKMwhIYZBpdZCWGFkmFeOPn6S19mZAouJ76StA6BUkZCA23JexrouC3WEQXYYY2K6ObyCOd5AvcyXUYz9Ag0jW3lZBVmZA3QkZAB4xmcgWUymDsoJJLtTbe2DmutmQZDZD";
-const verifyToken = "muthiah566";
+let pageToken = process.env.APP_PAGE_TOKEN;
+const verifyToken = process.env.APP_VERIFY_TOKEN;
 
 const app = express();
 app.use(bodyParser.json());
