@@ -15,7 +15,10 @@ app.use(bodyParser.json())
 //ROUTES
 
 app.get('/', function(req, res){
-	res.send("391351686")
+	 if (req.query['hub.verify_token'] === "muthiah566") {
+        return res.send(req.query['hub.challenge']);
+    }
+    res.send('Error, wrong validation token');
 })
 
 
